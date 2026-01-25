@@ -12,7 +12,6 @@ import { api } from "../../constants";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../../hooks/useAuth";
 
-// Import Custom Components
 import { EventHeader } from "../../components/event/EventHeader";
 import { MatchItem } from "../../components/event/MatchItem";
 import { RegistrationModal } from "../../components/event/RegistrationModal";
@@ -24,6 +23,13 @@ export default function EventDetails() {
 
   const [matches, setMatches] = useState([]);
   const [event, setEvent] = useState<any>(null);
+  const [myBets, setMyBets] = useState<any[]>([]);
+
+  // NEW: Store stats for each match (Key: matchId, Value: Stats Array)
+  const [matchStatsMap, setMatchStatsMap] = useState<{ [key: string]: any }>(
+    {},
+  );
+
   const [loading, setLoading] = useState(true);
   const [isRegistered, setIsRegistered] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
@@ -35,14 +41,34 @@ export default function EventDetails() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [eventRes, matchRes, myTeamsRes] = await Promise.all([
+
+      const [eventRes, matchRes, myTeamsRes, myInvestRes] = await Promise.all([
         api.get(`/events/${id}`),
         api.get(`/match/event/${id}`),
         api.get(`/teams/my`),
+        api.get(`/investment/my`),
       ]);
 
       setEvent(eventRes.data);
-      setMatches(matchRes.data);
+      const fetchedMatches = matchRes.data;
+      setMatches(fetchedMatches);
+      setMyBets(myInvestRes.data);
+
+      // --- NEW: Fetch Stats for ALL matches just like Admin Panel ---
+      // We do this in parallel to be fast
+      const statsMap: any = {};
+      await Promise.all(
+        fetchedMatches.map(async (m: any) => {
+          try {
+            const { data } = await api.get(`/investment/match/${m._id}/stats`);
+            statsMap[m._id] = data; // Store the array of stats
+          } catch (err) {
+            console.log(`Failed to fetch stats for ${m._id}`);
+          }
+        }),
+      );
+      setMatchStatsMap(statsMap);
+      // -------------------------------------------------------------
 
       const myTeamForEvent = myTeamsRes.data.find(
         (t: any) => t.event._id === id || t.event === id,
@@ -56,6 +82,7 @@ export default function EventDetails() {
     }
   };
 
+  // ... (rest of your existing code: getButtonState, btnState, etc.)
   const getButtonState = () => {
     if (isRegistered)
       return {
@@ -71,7 +98,6 @@ export default function EventDetails() {
       };
     return { text: "REGISTER TEAM", disabled: false, color: "bg-tech-primary" };
   };
-
   const btnState = getButtonState();
 
   if (loading) {
@@ -87,7 +113,6 @@ export default function EventDetails() {
   return (
     <ScreenWrapper>
       <View className="flex-1">
-        {/* Navigation Header */}
         <View className="flex-row items-center mb-4">
           <TouchableOpacity
             onPress={() => router.back()}
@@ -98,7 +123,6 @@ export default function EventDetails() {
           <Text className="text-white font-bold text-lg">Event Details</Text>
         </View>
 
-        {/* Content List */}
         <FlatList
           data={matches}
           keyExtractor={(item: any) => item._id}
@@ -108,11 +132,24 @@ export default function EventDetails() {
               No matches scheduled.
             </Text>
           }
-          renderItem={({ item }) => <MatchItem item={item} />}
+          renderItem={({ item }) => {
+            const myBetForMatch = myBets.find(
+              (b: any) => b?.match === item._id || b?.match?._id === item._id,
+            );
+
+            // Pass the specific stats for this match
+            return (
+              <MatchItem
+                item={item}
+                myBet={myBetForMatch}
+                matchStats={matchStatsMap[item._id]} // <--- Passing the data here
+              />
+            );
+          }}
           contentContainerStyle={{ paddingBottom: 100 }}
         />
 
-        {/* Floating Action Button */}
+        {/* ... (Modal code remains same) */}
         <View className="absolute bottom-0 left-0 right-0 p-4 bg-tech-bg/90 border-t border-tech-border">
           <TouchableOpacity
             onPress={() => setModalVisible(true)}
@@ -126,8 +163,6 @@ export default function EventDetails() {
             </Text>
           </TouchableOpacity>
         </View>
-
-        {/* Registration Modal */}
         <RegistrationModal
           visible={modalVisible}
           onClose={() => setModalVisible(false)}

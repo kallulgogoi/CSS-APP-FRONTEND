@@ -151,13 +151,13 @@ export default function Leaderboard() {
                 )}
               </View>
 
-              {/* Value */}
               <View className="items-end">
                 <Text className="text-tech-accent font-extrabold text-xl">
                   {isUser ? item.points : item.totalInvestment}
                 </Text>
                 <Text className="text-tech-muted text-[10px] font-bold">
-                  PTS
+                  {/* Change label based on context */}
+                  {isUser ? "INVESTED" : "PTS"}
                 </Text>
               </View>
             </View>
