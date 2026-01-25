@@ -25,7 +25,6 @@ export default function EventDetails() {
   const [event, setEvent] = useState<any>(null);
   const [myBets, setMyBets] = useState<any[]>([]);
 
-  // NEW: Store stats for each match (Key: matchId, Value: Stats Array)
   const [matchStatsMap, setMatchStatsMap] = useState<{ [key: string]: any }>(
     {},
   );
@@ -54,21 +53,18 @@ export default function EventDetails() {
       setMatches(fetchedMatches);
       setMyBets(myInvestRes.data);
 
-      // --- NEW: Fetch Stats for ALL matches just like Admin Panel ---
-      // We do this in parallel to be fast
       const statsMap: any = {};
       await Promise.all(
         fetchedMatches.map(async (m: any) => {
           try {
             const { data } = await api.get(`/investment/match/${m._id}/stats`);
-            statsMap[m._id] = data; // Store the array of stats
+            statsMap[m._id] = data;
           } catch (err) {
             console.log(`Failed to fetch stats for ${m._id}`);
           }
         }),
       );
       setMatchStatsMap(statsMap);
-      // -------------------------------------------------------------
 
       const myTeamForEvent = myTeamsRes.data.find(
         (t: any) => t.event._id === id || t.event === id,
@@ -82,7 +78,6 @@ export default function EventDetails() {
     }
   };
 
-  // ... (rest of your existing code: getButtonState, btnState, etc.)
   const getButtonState = () => {
     if (isRegistered)
       return {
@@ -137,19 +132,17 @@ export default function EventDetails() {
               (b: any) => b?.match === item._id || b?.match?._id === item._id,
             );
 
-            // Pass the specific stats for this match
             return (
               <MatchItem
                 item={item}
                 myBet={myBetForMatch}
-                matchStats={matchStatsMap[item._id]} // <--- Passing the data here
+                matchStats={matchStatsMap[item._id]}
               />
             );
           }}
           contentContainerStyle={{ paddingBottom: 100 }}
         />
 
-        {/* ... (Modal code remains same) */}
         <View className="absolute bottom-0 left-0 right-0 p-4 bg-tech-bg/90 border-t border-tech-border">
           <TouchableOpacity
             onPress={() => setModalVisible(true)}

@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { api } from "../../constants";
+import { useRouter } from "expo-router";
 
 interface RegistrationModalProps {
   visible: boolean;
@@ -29,16 +30,14 @@ export const RegistrationModal = ({
   user,
   onSuccess,
 }: RegistrationModalProps) => {
+  const router = useRouter();
   const [teamName, setTeamName] = useState("");
   const [captainPhone, setCaptainPhone] = useState("");
-  // New State: Array of strings for member emails
   const [memberEmails, setMemberEmails] = useState<string[]>([""]);
   const [submitting, setSubmitting] = useState(false);
 
-  // Add a new empty field
   const addMemberField = () => {
     if (event.maxTeamSize && memberEmails.length >= event.maxTeamSize - 1) {
-      // -1 because captain is included
       return Alert.alert(
         "Limit Reached",
         `Max team size is ${event.maxTeamSize}`,
@@ -47,14 +46,12 @@ export const RegistrationModal = ({
     setMemberEmails([...memberEmails, ""]);
   };
 
-  // Remove a field
   const removeMemberField = (index: number) => {
     const updated = [...memberEmails];
     updated.splice(index, 1);
     setMemberEmails(updated);
   };
 
-  // Update specific email field
   const updateEmail = (text: string, index: number) => {
     const updated = [...memberEmails];
     updated[index] = text;
@@ -67,7 +64,6 @@ export const RegistrationModal = ({
     if (event.type !== "SOLO" && !teamName)
       return Alert.alert("Missing Info", "Team Name is required.");
 
-    // Filter out empty emails
     const validEmails = memberEmails
       .map((e) => e.trim())
       .filter((e) => e !== "");
@@ -91,14 +87,30 @@ export const RegistrationModal = ({
         captainPhone: captainPhone,
         members: membersPayload,
       });
-
-      Alert.alert("Success", "Registration Successful!");
-      onSuccess();
-      onClose();
-      // Reset Form
-      setTeamName("");
-      setCaptainPhone("");
-      setMemberEmails([""]);
+      Alert.alert(
+        "Registration Submitted!",
+        "Your team has been registered successfully.\n\nPlease wait for Admin Approval. You can check your status in your Profile.",
+        [
+          {
+            text: "Stay Here",
+            onPress: () => {
+              onSuccess();
+              onClose();
+              resetForm();
+            },
+            style: "cancel",
+          },
+          {
+            text: "Go to Profile",
+            onPress: () => {
+              onSuccess();
+              onClose();
+              resetForm();
+              router.push("/profile");
+            },
+          },
+        ],
+      );
     } catch (error: any) {
       Alert.alert(
         "Error",
@@ -107,6 +119,12 @@ export const RegistrationModal = ({
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const resetForm = () => {
+    setTeamName("");
+    setCaptainPhone("");
+    setMemberEmails([""]);
   };
 
   return (

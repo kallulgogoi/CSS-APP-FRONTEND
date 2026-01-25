@@ -46,9 +46,6 @@ export const MatchItem = ({
   const isMyBetA = myBetTeamId === item.teamA?._id;
   const isMyBetB = myBetTeamId === item.teamB?._id;
 
-  // --- LOGIC FROM ADMIN PANEL ---
-  // If matchStats exists, calculate totals from it. Otherwise fallback to item.totalInvestedX
-
   const teamAId = item.teamA?._id || item.teamA;
   const teamBId = item.teamB?._id || item.teamB;
 
@@ -62,7 +59,6 @@ export const MatchItem = ({
     if (statsA) totalInvestedA = statsA.totalPoints;
     if (statsB) totalInvestedB = statsB.totalPoints;
   }
-  // -----------------------------
 
   return (
     <TouchableOpacity

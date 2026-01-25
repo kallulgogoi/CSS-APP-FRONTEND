@@ -7,66 +7,151 @@ import {
   Image,
   RefreshControl,
   StatusBar,
+  TextInput,
+  FlatList,
+  Animated,
 } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import { useAuth } from "../../hooks/useAuth";
 import { ScreenWrapper } from "../../components/ScreenWrapper";
 import { api } from "../../constants";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
+
+import { HorizontalEventCard } from "../../components/home/HorizontalEventCard";
+import { VerticalEventCard } from "../../components/home/VerticalEventCard";
+import { PointsCard } from "../../components/home/PointsCard";
+import { SectionHeader } from "../../components/home/SectionHeader";
+import { EmptyState } from "../../components/home/EmptyState";
+import { MatchItem } from "../../components/event/MatchItem";
 
 export default function Home() {
   const { user, updateUser } = useAuth();
   const router = useRouter();
-  const [events, setEvents] = useState([]);
+
+  const [events, setEvents] = useState<any[]>([]);
+  const [liveMatches, setLiveMatches] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [greeting, setGreeting] = useState<string>("Good Morning");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [scrollY] = useState(new Animated.Value(0));
+
   useFocusEffect(
     useCallback(() => {
-      fetchData();
-      const hour = new Date().getHours();
-      if (hour < 12) {
-        setGreeting("Good Morning");
-      } else if (hour < 18) {
-        setGreeting("Good Afternoon");
-      } else {
-        setGreeting("Good Evening");
-      }
+      let isActive = true;
+
+      const fetchInitialData = async () => {
+        try {
+          const hour = new Date().getHours();
+          let newGreeting = "Good Morning";
+          if (hour >= 12 && hour < 18) newGreeting = "Good Afternoon";
+          else if (hour >= 18) newGreeting = "Good Evening";
+          if (isActive) setGreeting(newGreeting);
+
+          const [eventsRes, userRes] = await Promise.all([
+            api.get("/events"),
+            api.get("/auth/me"),
+          ]);
+
+          if (isActive) {
+            const fetchedEvents = eventsRes.data;
+            setEvents(fetchedEvents);
+            if (userRes.data) updateUser(userRes.data);
+
+            const eventIdsToCheck = fetchedEvents
+              .map((e: any) => e._id)
+              .slice(0, 5);
+
+            if (eventIdsToCheck.length > 0) {
+              const matchPromises = eventIdsToCheck.map((id: string) =>
+                api.get(`/match/event/${id}`),
+              );
+
+              const matchesResponses = await Promise.all(matchPromises);
+              const allMatches = matchesResponses.flatMap((res) => res.data);
+
+              const relevantMatches = allMatches
+                .filter(
+                  (m: any) => m.status === "LIVE" || m.status === "UPCOMING",
+                )
+                .sort((a: any, b: any) => {
+                  if (a.status === "LIVE" && b.status !== "LIVE") return -1;
+                  if (b.status === "LIVE" && a.status !== "LIVE") return 1;
+                  return (
+                    new Date(a.startTime).getTime() -
+                    new Date(b.startTime).getTime()
+                  );
+                });
+
+              setLiveMatches(relevantMatches);
+            }
+          }
+        } catch (error) {
+          console.log("Error fetching data", error);
+        } finally {
+          if (isActive) setRefreshing(false);
+        }
+      };
+
+      fetchInitialData();
+
+      return () => {
+        isActive = false;
+      };
     }, []),
   );
 
-  const fetchData = async () => {
+  const onRefresh = async () => {
+    setRefreshing(true);
     try {
       const [eventsRes, userRes] = await Promise.all([
         api.get("/events"),
         api.get("/auth/me"),
       ]);
+      const fetchedEvents = eventsRes.data;
+      setEvents(fetchedEvents);
+      if (userRes.data) updateUser(userRes.data);
 
-      setEvents(eventsRes.data);
-      if (userRes.data) {
-        updateUser(userRes.data);
+      const activeEventIds = fetchedEvents
+        .filter((e: any) => e.isActive)
+        .map((e: any) => e._id)
+        .slice(0, 3);
+
+      if (activeEventIds.length > 0) {
+        const matchesResponses = await Promise.all(
+          activeEventIds.map((id: string) => api.get(`/match/event/${id}`)),
+        );
+        const allMatches = matchesResponses.flatMap((res) => res.data);
+        const relevantMatches = allMatches.filter(
+          (m: any) => m.status === "LIVE" || m.status === "UPCOMING",
+        );
+        setLiveMatches(relevantMatches);
       }
     } catch (error) {
-      console.log("Error fetching data", error);
+      console.log("Error refreshing", error);
     } finally {
       setRefreshing(false);
     }
   };
 
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchData();
+  const shortName = (name?: string) => {
+    if (!name) return "Athlete";
+    return name.length > 14 ? name.slice(0, 11) + "..." : name;
   };
 
-  const shortName = (name: string) => {
-    if (!name) return "User";
-    if (name.length <= 10) return name;
-    return name.slice(0, 10) + "...";
-  };
+  const filteredEvents = events.filter((item: any) =>
+    item.name.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
+
+  const cricketEvents = events.filter(
+    (item: any) => item.sport?.toLowerCase() === "cricket",
+  );
+  const badmintonEvents = events.filter(
+    (item: any) => item.sport?.toLowerCase() === "badminton",
+  );
 
   return (
     <ScreenWrapper>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="light-content" backgroundColor="#000" />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 100 }}
@@ -74,132 +159,194 @@ export default function Home() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#06b6d4"
+            tintColor="#00d4ff"
+            colors={["#00d4ff", "#3b82f6"]}
           />
         }
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: false },
+        )}
+        scrollEventThrottle={16}
       >
-        <View className="flex-row justify-between items-center mb-6 mt-4">
-          <View>
-            <Text className="text-tech-muted text-md font-bold tracking-widest uppercase mb-1">
-              {greeting}
-            </Text>
-            <Text className="text-3xl font-extrabold text-white tracking-tight">
-              {shortName(user?.name as any)}
-            </Text>
-          </View>
-          <TouchableOpacity onPress={() => router.push("/profile")}>
-            <View className="w-12 h-12 rounded-full border-2 border-tech-primary overflow-hidden bg-tech-card">
-              {user?.profilePicture ? (
-                <Image
-                  source={{ uri: user.profilePicture }}
-                  className="w-full h-full"
-                />
-              ) : (
-                <View className="w-full h-full items-center justify-center bg-tech-bg">
-                  <Text className="text-white font-bold text-lg">
-                    {user?.name?.charAt(0)}
-                  </Text>
-                </View>
-              )}
+        <View className="px-4 pt-4">
+          <View className="flex-row justify-between items-center py-6">
+            <View>
+              <Text className="text-gray-400 text-md font-medium tracking-widest uppercase">
+                {greeting}
+              </Text>
+              <Text className="text-4xl font-black text-white mt-2 tracking-tight">
+                {shortName(user?.name)}
+              </Text>
             </View>
-          </TouchableOpacity>
-        </View>
 
-        <View className="mb-8 rounded-3xl overflow-hidden shadow-2xl shadow-tech-primary/30">
-          <LinearGradient
-            colors={["#1e293b", "#0f172a"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            className="p-6 border border-tech-border/50 relative"
-          >
-            <View className="flex-row justify-between items-start">
-              <View>
-                <Text className="text-tech-muted text-xs font-bold mb-2 tracking-widest">
-                  CREDITS AVAILABLE
-                </Text>
-                <View className="flex-row items-baseline">
-                  {/* Displays the dynamic user points */}
-                  <Text className="text-5xl font-black text-white shadow-black drop-shadow-md">
-                    {user?.points?.toLocaleString() || 0}
-                  </Text>
-                  <Text className="text-tech-primary font-bold text-lg ml-2">
-                    PTS
-                  </Text>
+            {/* Notification*/}
+            <View className="flex-row items-center gap-3">
+              <TouchableOpacity
+                onPress={() => router.push("/notifications" as any)}
+                className="h-12 w-12 rounded-full bg-gray-800 border border-gray-700 items-center justify-center"
+              >
+                <Ionicons
+                  name="notifications-outline"
+                  size={22}
+                  color="white"
+                />
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={() => router.push("/profile")}>
+                <View className="h-12 w-12 rounded-full bg-gray-800 border border-gray-700 overflow-hidden">
+                  <Image
+                    source={{ uri: user?.profilePicture }}
+                    className="h-full w-full"
+                  />
                 </View>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <PointsCard user={user} />
+
+          <View className="mb-8">
+            <View className="rounded-2xl overflow-hidden bg-gray-900/50 border border-gray-800/50">
+              <View className="flex-row items-center h-16 px-5">
+                <Ionicons name="search" size={22} color="#00d4ff" />
+                <TextInput
+                  placeholder="Search events, sports..."
+                  placeholderTextColor="#6b7280"
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  className="flex-1 ml-4 text-white font-medium text-lg h-full"
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity onPress={() => setSearchQuery("")}>
+                    <Ionicons name="close-circle" size={22} color="#6b7280" />
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
-          </LinearGradient>
+          </View>
         </View>
 
-        <View className="flex-row justify-between items-center mb-4">
-          <Text className="text-xl font-bold text-white">Live Protocols</Text>
-          <TouchableOpacity onPress={() => fetchData()}>
-            <Ionicons name="refresh-circle" size={24} color="#64748b" />
-          </TouchableOpacity>
-        </View>
-
-        {events.length === 0 ? (
-          <View className="items-center justify-center py-10 opacity-50">
-            <Ionicons name="server-outline" size={48} color="#64748b" />
-            <Text className="text-tech-muted italic mt-4">
-              System Offline: No events found.
-            </Text>
+        {searchQuery.length > 0 ? (
+          <View className="px-4">
+            <View className="flex-row items-center justify-between mb-6">
+              <View>
+                <Text className="text-2xl font-black text-white">
+                  Search Results
+                </Text>
+                <Text className="text-gray-400 mt-1">
+                  {filteredEvents.length} events found
+                </Text>
+              </View>
+            </View>
+            {filteredEvents.map((item: any) => (
+              <VerticalEventCard key={item._id} item={item} />
+            ))}
           </View>
         ) : (
-          events.map((item: any) => (
-            <TouchableOpacity
-              key={item._id}
-              activeOpacity={0.9}
-              onPress={() => router.push(`/event/${item._id}` as any)}
-              className="mb-6 rounded-2xl overflow-hidden shadow-lg border border-tech-border/30 bg-tech-card"
-            >
-              <View className="h-40 relative">
-                <Image
-                  source={{ uri: item.bannerImageUrl }}
-                  className="w-full h-full"
-                  resizeMode="cover"
-                />
-
-                <LinearGradient
-                  colors={["transparent", "rgba(0,0,0,0.9)"]}
-                  className="absolute left-0 right-0 bottom-0 h-24"
-                />
-
-                {item.isActive && (
-                  <View className="absolute top-3 right-3 bg-red-600/90 px-3 py-1 rounded-full flex-row items-center border border-red-400">
-                    <View className="w-2 h-2 rounded-full bg-white animate-pulse mr-2" />
-                    <Text className="text-white text-[10px] font-bold">
-                      LIVE
+          <>
+            <View className="mb-8">
+              <View className="flex-row justify-between items-center mb-4 px-1">
+                <View className="flex-row items-center">
+                  <View className="bg-red-500/10 p-2 rounded-full mr-2">
+                    <Ionicons name="trophy" size={18} color="#ef4444" />
+                  </View>
+                  <View>
+                    <Text className="text-xl font-black text-white tracking-tight">
+                      Match Center
+                    </Text>
+                    <Text className="text-neutral-400 text-xs">
+                      {liveMatches.length > 0
+                        ? "Live & Upcoming"
+                        : "Scores & Results"}
                     </Text>
                   </View>
-                )}
+                </View>
 
-                <View className="absolute top-3 left-3 bg-black/60 backdrop-blur-md px-3 py-1 rounded-lg border border-white/10">
-                  <Text className="text-tech-primary text-[10px] font-bold uppercase">
-                    {item.sport}
+                <TouchableOpacity
+                  onPress={() => router.push("/matches" as any)}
+                >
+                  <Text className="text-cyan-400 font-bold text-sm">
+                    View All
                   </Text>
-                </View>
+                </TouchableOpacity>
               </View>
 
-              <View className="p-4 bg-tech-card">
-                <View className="flex-row justify-between items-start">
-                  <View className="flex-1 mr-2">
-                    <Text className="text-white text-xl font-bold leading-tight mb-1">
-                      {item.name}
-                    </Text>
-                    <Text className="text-tech-muted text-xs">
-                      {item.type} Edition • Priority Access
-                    </Text>
-                  </View>
-                  <View className="bg-tech-bg rounded-lg p-2 items-center justify-center border border-tech-border">
-                    <Ionicons name="chevron-forward" size={20} color="#fff" />
-                  </View>
-                </View>
+              {liveMatches.length > 0 ? (
+                <FlatList
+                  horizontal
+                  data={liveMatches.slice(0, 4)}
+                  keyExtractor={(item) => item._id}
+                  renderItem={({ item }) => (
+                    <View className="w-80 mr-4">
+                      <MatchItem item={item} />
+                    </View>
+                  )}
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ paddingHorizontal: 16 }}
+                />
+              ) : (
+                <TouchableOpacity
+                  onPress={() => router.push("/matches" as any)}
+                  activeOpacity={0.7}
+                  className="bg-neutral-900/50 p-6 rounded-2xl border border-neutral-800 border-dashed items-center justify-center mx-4"
+                >
+                  <Ionicons name="calendar-outline" size={32} color="#525252" />
+                  <Text className="text-neutral-400 font-bold mt-2">
+                    No live matches right now
+                  </Text>
+                  <Text className="text-cyan-500 text-xs font-bold mt-1">
+                    Tap to view full schedule & results
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {cricketEvents.length > 0 && (
+              <View className="mb-10">
+                <SectionHeader
+                  title="Cricket Fever"
+                  subtitle="Tournaments & Leagues"
+                  iconName="baseball"
+                  colors={["#f59e0b", "#d97706"]}
+                />
+                <FlatList
+                  horizontal
+                  data={cricketEvents}
+                  keyExtractor={(item) => item._id}
+                  renderItem={({ item }) => <HorizontalEventCard item={item} />}
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ paddingHorizontal: 16 }}
+                />
               </View>
-            </TouchableOpacity>
-          ))
+            )}
+
+            {badmintonEvents.length > 0 && (
+              <View className="mb-10">
+                <SectionHeader
+                  title="Badminton Smash"
+                  subtitle="Court battles"
+                  iconName="tennisball"
+                  colors={["#8b5cf6", "#7c3aed"]}
+                />
+                <FlatList
+                  horizontal
+                  data={badmintonEvents}
+                  keyExtractor={(item) => item._id}
+                  renderItem={({ item }) => <HorizontalEventCard item={item} />}
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ paddingHorizontal: 16 }}
+                />
+              </View>
+            )}
+
+            {cricketEvents.length === 0 && badmintonEvents.length === 0 && (
+              <EmptyState onRefresh={onRefresh} />
+            )}
+          </>
         )}
       </ScrollView>
+      <View className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-500 via-blue-500 to-cyan-500" />
     </ScreenWrapper>
   );
 }
