@@ -11,9 +11,12 @@ import { useRouter } from "expo-router";
 import { ScreenWrapper } from "../../components/ScreenWrapper";
 import { api } from "../../constants";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context"; // 1. Import this
 
 export default function NotificationScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets(); // 2. Get safe area insets
+
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -46,13 +49,13 @@ export default function NotificationScreen() {
   const getIcon = (type: string) => {
     switch (type) {
       case "SUCCESS":
-        return { name: "checkmark-circle", color: "#4ade80" }; // Green
+        return { name: "checkmark-circle", color: "#4ade80" };
       case "WARNING":
-        return { name: "alert-circle", color: "#fbbf24" }; // Yellow
+        return { name: "alert-circle", color: "#fbbf24" };
       case "ERROR":
-        return { name: "close-circle", color: "#f87171" }; // Red
+        return { name: "close-circle", color: "#f87171" };
       default:
-        return { name: "information-circle", color: "#60a5fa" }; // Blue
+        return { name: "information-circle", color: "#60a5fa" };
     }
   };
 
@@ -80,6 +83,8 @@ export default function NotificationScreen() {
           <FlatList
             data={notifications}
             keyExtractor={(item: any) => item._id}
+            // 3. Add dynamic bottom padding here
+            contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
@@ -104,7 +109,11 @@ export default function NotificationScreen() {
               const icon = getIcon(item.type);
               return (
                 <View
-                  className={`mb-3 p-4 rounded-xl border ${item.read ? "bg-neutral-900 border-neutral-800" : "bg-neutral-800 border-neutral-700"}`}
+                  className={`mb-3 p-4 rounded-xl border ${
+                    item.read
+                      ? "bg-neutral-900 border-neutral-800"
+                      : "bg-neutral-800 border-neutral-700"
+                  }`}
                 >
                   <View className="flex-row">
                     <View className="mt-1 mr-3">
@@ -114,7 +123,9 @@ export default function NotificationScreen() {
                     <View className="flex-1">
                       <View className="flex-row justify-between">
                         <Text
-                          className={`font-bold text-base mb-1 ${item.read ? "text-gray-400" : "text-white"}`}
+                          className={`font-bold text-base mb-1 ${
+                            item.read ? "text-gray-400" : "text-white"
+                          }`}
                         >
                           {item.title}
                         </Text>

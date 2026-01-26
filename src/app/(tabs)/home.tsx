@@ -34,6 +34,12 @@ export default function Home() {
   const [greeting, setGreeting] = useState<string>("Good Morning");
   const [searchQuery, setSearchQuery] = useState("");
   const [scrollY] = useState(new Animated.Value(0));
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // 1. New State for Match Stats
+  const [matchStatsMap, setMatchStatsMap] = useState<{ [key: string]: any }>(
+    {},
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -47,15 +53,21 @@ export default function Home() {
           else if (hour >= 18) newGreeting = "Good Evening";
           if (isActive) setGreeting(newGreeting);
 
-          const [eventsRes, userRes] = await Promise.all([
+          const [eventsRes, userRes, notifRes] = await Promise.all([
             api.get("/events"),
             api.get("/auth/me"),
+            api.get("/notifications/my"),
           ]);
 
           if (isActive) {
             const fetchedEvents = eventsRes.data;
             setEvents(fetchedEvents);
             if (userRes.data) updateUser(userRes.data);
+
+            const unread = (notifRes.data || []).filter(
+              (n: any) => !n.read,
+            ).length;
+            setUnreadCount(unread);
 
             const eventIdsToCheck = fetchedEvents
               .map((e: any) => e._id)
@@ -83,6 +95,22 @@ export default function Home() {
                 });
 
               setLiveMatches(relevantMatches);
+
+              // 2. Fetch Stats for these matches
+              const stats: any = {};
+              await Promise.all(
+                relevantMatches.slice(0, 10).map(async (m: any) => {
+                  try {
+                    const { data } = await api.get(
+                      `/investment/match/${m._id}/stats`,
+                    );
+                    stats[m._id] = data;
+                  } catch (e) {
+                    console.log(`Failed stats for ${m._id}`);
+                  }
+                }),
+              );
+              setMatchStatsMap(stats);
             }
           }
         } catch (error) {
@@ -103,13 +131,18 @@ export default function Home() {
   const onRefresh = async () => {
     setRefreshing(true);
     try {
-      const [eventsRes, userRes] = await Promise.all([
+      const [eventsRes, userRes, notifRes] = await Promise.all([
         api.get("/events"),
         api.get("/auth/me"),
+        api.get("/notifications/my"),
       ]);
+
       const fetchedEvents = eventsRes.data;
       setEvents(fetchedEvents);
       if (userRes.data) updateUser(userRes.data);
+
+      const unread = (notifRes.data || []).filter((n: any) => !n.read).length;
+      setUnreadCount(unread);
 
       const activeEventIds = fetchedEvents
         .filter((e: any) => e.isActive)
@@ -125,6 +158,20 @@ export default function Home() {
           (m: any) => m.status === "LIVE" || m.status === "UPCOMING",
         );
         setLiveMatches(relevantMatches);
+
+        // 3. Update Stats on Refresh
+        const stats: any = {};
+        await Promise.all(
+          relevantMatches.slice(0, 10).map(async (m: any) => {
+            try {
+              const { data } = await api.get(
+                `/investment/match/${m._id}/stats`,
+              );
+              stats[m._id] = data;
+            } catch (e) {}
+          }),
+        );
+        setMatchStatsMap(stats);
       }
     } catch (error) {
       console.log("Error refreshing", error);
@@ -180,17 +227,27 @@ export default function Home() {
               </Text>
             </View>
 
-            {/* Notification*/}
+            {/* Notification & Profile */}
             <View className="flex-row items-center gap-3">
+              {/* Notification Button with Badge */}
               <TouchableOpacity
+                activeOpacity={0.8}
                 onPress={() => router.push("/notifications" as any)}
-                className="h-12 w-12 rounded-full bg-gray-800 border border-gray-700 items-center justify-center"
+                className="h-12 w-12 rounded-full bg-gray-800 border border-gray-700 items-center justify-center relative"
               >
                 <Ionicons
                   name="notifications-outline"
                   size={22}
                   color="white"
                 />
+
+                {unreadCount > 0 && (
+                  <View className="absolute top-0 right-0 h-4 w-4 bg-red-500 rounded-full items-center justify-center border border-gray-800">
+                    <Text className="text-[9px] font-bold text-white">
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </Text>
+                  </View>
+                )}
               </TouchableOpacity>
 
               <TouchableOpacity onPress={() => router.push("/profile")}>
@@ -279,7 +336,11 @@ export default function Home() {
                   keyExtractor={(item) => item._id}
                   renderItem={({ item }) => (
                     <View className="w-80 mr-4">
-                      <MatchItem item={item} />
+                      {/* 4. Pass matchStats to MatchItem */}
+                      <MatchItem
+                        item={item}
+                        matchStats={matchStatsMap[item._id]}
+                      />
                     </View>
                   )}
                   showsHorizontalScrollIndicator={false}

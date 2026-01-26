@@ -11,6 +11,7 @@ import { ScreenWrapper } from "../../components/ScreenWrapper";
 import { api } from "../../constants";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../../hooks/useAuth";
+import { useSafeAreaInsets } from "react-native-safe-area-context"; // for the safe area
 
 import { EventHeader } from "../../components/event/EventHeader";
 import { MatchItem } from "../../components/event/MatchItem";
@@ -20,15 +21,14 @@ export default function EventDetails() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
 
   const [matches, setMatches] = useState([]);
   const [event, setEvent] = useState<any>(null);
   const [myBets, setMyBets] = useState<any[]>([]);
-
   const [matchStatsMap, setMatchStatsMap] = useState<{ [key: string]: any }>(
     {},
   );
-
   const [loading, setLoading] = useState(true);
   const [isRegistered, setIsRegistered] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
@@ -40,7 +40,6 @@ export default function EventDetails() {
   const fetchData = async () => {
     try {
       setLoading(true);
-
       const [eventRes, matchRes, myTeamsRes, myInvestRes] = await Promise.all([
         api.get(`/events/${id}`),
         api.get(`/match/event/${id}`),
@@ -107,7 +106,7 @@ export default function EventDetails() {
 
   return (
     <ScreenWrapper>
-      <View className="flex-1">
+      <View className="flex-1 relative">
         <View className="flex-row items-center mb-4">
           <TouchableOpacity
             onPress={() => router.back()}
@@ -140,22 +139,28 @@ export default function EventDetails() {
               />
             );
           }}
-          contentContainerStyle={{ paddingBottom: 100 }}
+          contentContainerStyle={{ paddingBottom: 120 }}
         />
 
-        <View className="absolute bottom-0 left-0 right-0 p-4 bg-tech-bg/90 border-t border-tech-border">
-          <TouchableOpacity
-            onPress={() => setModalVisible(true)}
-            disabled={btnState.disabled}
-            className={`w-full py-4 rounded-xl items-center shadow-lg ${btnState.color}`}
+        {!modalVisible && (
+          <View
+            className="absolute bottom-0 left-0 right-0 p-4 bg-tech-bg/95 border-t border-tech-border"
+            style={{ paddingBottom: insets.bottom + 16 }}
           >
-            <Text
-              className={`font-bold text-lg ${btnState.disabled ? "text-gray-300" : "text-black"}`}
+            <TouchableOpacity
+              onPress={() => setModalVisible(true)}
+              disabled={btnState.disabled}
+              className={`w-full py-4 rounded-xl items-center shadow-lg ${btnState.color}`}
             >
-              {btnState.text}
-            </Text>
-          </TouchableOpacity>
-        </View>
+              <Text
+                className={`font-bold text-lg ${btnState.disabled ? "text-gray-300" : "text-black"}`}
+              >
+                {btnState.text}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         <RegistrationModal
           visible={modalVisible}
           onClose={() => setModalVisible(false)}

@@ -36,9 +36,10 @@ export default function Developer() {
 
   const openLink = async (url: string) => {
     if (!url) return;
-    const supported = await Linking.canOpenURL(url);
-    if (supported) {
+    try {
       await Linking.openURL(url);
+    } catch (err) {
+      console.error("Failed to open URL:", err);
     }
   };
 
@@ -120,10 +121,10 @@ export default function Developer() {
 
         {/* Footer */}
         <View className="mt-12 items-center">
-          <Text className="text-tech-muted text-xs">
-            Designed & Developed By Kallul & Nibir
+          <Text className="text-tech-muted text-md">
+            Designed & Developed By Gogoi Da & Deka Da
           </Text>
-          <Text className="text-tech-muted/50 text-[10px] mt-1">v1.0.0</Text>
+          <Text className="text-tech-muted/50 text-md mt-1">v1.0.0</Text>
         </View>
       </ScrollView>
     </ScreenWrapper>

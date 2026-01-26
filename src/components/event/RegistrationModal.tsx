@@ -10,6 +10,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { api } from "../../constants";
@@ -60,9 +62,9 @@ export const RegistrationModal = ({
 
   const handleRegister = async () => {
     if (!captainPhone)
-      return Alert.alert("Missing Info", "Please enter captain's phone.");
+      return Alert.alert("Missing Info", "Enter captain's phone.");
     if (event.type !== "SOLO" && !teamName)
-      return Alert.alert("Missing Info", "Team Name is required.");
+      return Alert.alert("Missing Info", "Team Name required.");
 
     const validEmails = memberEmails
       .map((e) => e.trim())
@@ -74,7 +76,6 @@ export const RegistrationModal = ({
 
     try {
       setSubmitting(true);
-
       const membersPayload = validEmails.map((email) => ({
         email,
         role: "PLAYER",
@@ -87,26 +88,17 @@ export const RegistrationModal = ({
         captainPhone: captainPhone,
         members: membersPayload,
       });
+
       Alert.alert(
-        "Registration Submitted!",
-        "Your team has been registered successfully.\n\nPlease wait for Admin Approval. You can check your status in your Profile.",
+        "Success!",
+        "Registration Submitted. Wait for Admin Approval.",
         [
           {
-            text: "Stay Here",
+            text: "OK",
             onPress: () => {
               onSuccess();
               onClose();
               resetForm();
-            },
-            style: "cancel",
-          },
-          {
-            text: "Go to Profile",
-            onPress: () => {
-              onSuccess();
-              onClose();
-              resetForm();
-              router.push("/profile");
             },
           },
         ],
@@ -127,6 +119,11 @@ export const RegistrationModal = ({
     setMemberEmails([""]);
   };
 
+  // 1. Conditional Wrapper: Only use KeyboardAvoidingView on iOS
+  const Wrapper = Platform.OS === "ios" ? KeyboardAvoidingView : View;
+  const wrapperProps =
+    Platform.OS === "ios" ? { behavior: "padding" as const } : {};
+
   return (
     <Modal
       animationType="slide"
@@ -134,117 +131,138 @@ export const RegistrationModal = ({
       visible={visible}
       onRequestClose={onClose}
     >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1 justify-end"
-      >
-        <View className="bg-black/80 flex-1 justify-end">
-          <View className="bg-tech-card border-t border-tech-primary p-6 rounded-t-3xl h-[85%]">
-            <View className="flex-row justify-between items-center mb-6">
-              <Text className="text-2xl font-bold text-white">
-                Registration
-              </Text>
-              <TouchableOpacity onPress={onClose}>
-                <Ionicons name="close-circle" size={30} color="#64748b" />
-              </TouchableOpacity>
-            </View>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View className="flex-1 justify-end bg-black/80">
+          <Wrapper
+            {...wrapperProps}
+            className="w-full h-[85%]" // Take up 85% of screen
+          >
+            <View className="flex-1 bg-tech-card border-t border-tech-primary rounded-t-3xl overflow-hidden">
+              {/* Header */}
+              <View className="flex-row justify-between items-center p-6 border-b border-tech-border/30 bg-tech-card z-10">
+                <Text className="text-2xl font-bold text-white">
+                  {event?.type === "SOLO"
+                    ? "Solo Registration"
+                    : "Team Registration"}
+                </Text>
+                <TouchableOpacity onPress={onClose}>
+                  <Ionicons name="close-circle" size={30} color="#64748b" />
+                </TouchableOpacity>
+              </View>
 
-            <ScrollView showsVerticalScrollIndicator={false}>
-              <View className="space-y-4">
-                {/* Team Name */}
-                {event?.type !== "SOLO" && (
+              {/* ScrollView */}
+              <ScrollView
+                className="flex-1 px-6 pt-4"
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                // 2. Large padding allows scrolling content above keyboard
+                contentContainerStyle={{ paddingBottom: 400 }}
+              >
+                <View className="space-y-4">
+                  {/* Team Name */}
+                  {event?.type !== "SOLO" && (
+                    <View>
+                      <Text className="text-tech-muted text-xs font-bold mb-2">
+                        TEAM NAME
+                      </Text>
+                      <TextInput
+                        value={teamName}
+                        onChangeText={setTeamName}
+                        placeholder="Enter team name"
+                        placeholderTextColor="#64748b"
+                        className="bg-tech-bg text-white p-4 rounded-xl border border-tech-border"
+                      />
+                    </View>
+                  )}
+
+                  {/* Phone */}
                   <View>
                     <Text className="text-tech-muted text-xs font-bold mb-2">
-                      TEAM NAME
+                      PHONE NUMBER
                     </Text>
                     <TextInput
-                      value={teamName}
-                      onChangeText={setTeamName}
-                      placeholder="Enter team name"
+                      value={captainPhone}
+                      onChangeText={setCaptainPhone}
+                      placeholder="10-digit mobile number"
+                      keyboardType="phone-pad"
                       placeholderTextColor="#64748b"
                       className="bg-tech-bg text-white p-4 rounded-xl border border-tech-border"
                     />
                   </View>
-                )}
 
-                {/* Captain Phone */}
-                <View>
-                  <Text className="text-tech-muted text-xs font-bold mb-2">
-                    CAPTAIN PHONE
-                  </Text>
-                  <TextInput
-                    value={captainPhone}
-                    onChangeText={setCaptainPhone}
-                    placeholder="10-digit mobile number"
-                    keyboardType="phone-pad"
-                    placeholderTextColor="#64748b"
-                    className="bg-tech-bg text-white p-4 rounded-xl border border-tech-border"
-                  />
+                  {/* Members */}
+                  {event?.type !== "SOLO" && (
+                    <View>
+                      <View className="flex-row justify-between items-center mb-2 mt-2">
+                        <Text className="text-tech-muted text-xs font-bold">
+                          TEAM MEMBERS
+                        </Text>
+                        <TouchableOpacity
+                          onPress={addMemberField}
+                          className="flex-row items-center"
+                        >
+                          <Ionicons
+                            name="add-circle"
+                            size={18}
+                            color="#06b6d4"
+                          />
+                          <Text className="text-tech-primary text-xs font-bold ml-1">
+                            ADD
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+
+                      {memberEmails.map((email, index) => (
+                        <View
+                          key={index}
+                          className="flex-row items-center mb-3"
+                        >
+                          <TextInput
+                            value={email}
+                            onChangeText={(text) => updateEmail(text, index)}
+                            placeholder={`Member ${index + 1} Email`}
+                            placeholderTextColor="#64748b"
+                            autoCapitalize="none"
+                            keyboardType="email-address"
+                            className="flex-1 bg-tech-bg text-white p-3 rounded-xl border border-tech-border mr-2"
+                          />
+                          {memberEmails.length > 1 && (
+                            <TouchableOpacity
+                              onPress={() => removeMemberField(index)}
+                              className="p-3 bg-red-500/20 rounded-xl"
+                            >
+                              <Ionicons
+                                name="trash"
+                                size={18}
+                                color="#f87171"
+                              />
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      ))}
+                    </View>
+                  )}
                 </View>
 
-                {/* Dynamic Members Section */}
-                {event?.type !== "SOLO" && (
-                  <View>
-                    <View className="flex-row justify-between items-center mb-2">
-                      <Text className="text-tech-muted text-xs font-bold">
-                        TEAM MEMBERS
-                      </Text>
-                      <TouchableOpacity
-                        onPress={addMemberField}
-                        className="flex-row items-center"
-                      >
-                        <Ionicons name="add-circle" size={18} color="#06b6d4" />
-                        <Text className="text-tech-primary text-xs font-bold ml-1">
-                          ADD MEMBER
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-
-                    {memberEmails.map((email, index) => (
-                      <View key={index} className="flex-row items-center mb-2">
-                        <TextInput
-                          value={email}
-                          onChangeText={(text) => updateEmail(text, index)}
-                          placeholder={`Member ${index + 1} Email (e.g. name@college.edu)`}
-                          placeholderTextColor="#64748b"
-                          autoCapitalize="none"
-                          keyboardType="email-address"
-                          className="flex-1 bg-tech-bg text-white p-3 rounded-xl border border-tech-border mr-2"
-                        />
-                        {memberEmails.length > 1 && (
-                          <TouchableOpacity
-                            onPress={() => removeMemberField(index)}
-                            className="p-2 bg-red-500/20 rounded-lg"
-                          >
-                            <Ionicons name="trash" size={18} color="#f87171" />
-                          </TouchableOpacity>
-                        )}
-                      </View>
-                    ))}
-                    <Text className="text-tech-muted text-[10px] italic">
-                      Enter valid college email IDs for all members.
+                {/* Submit */}
+                <TouchableOpacity
+                  onPress={handleRegister}
+                  disabled={submitting}
+                  className="mt-8 bg-tech-primary py-4 rounded-xl items-center"
+                >
+                  {submitting ? (
+                    <ActivityIndicator color="black" />
+                  ) : (
+                    <Text className="text-black font-bold text-lg">
+                      CONFIRM
                     </Text>
-                  </View>
-                )}
-              </View>
-
-              <TouchableOpacity
-                onPress={handleRegister}
-                disabled={submitting}
-                className="mt-8 bg-tech-primary py-4 rounded-xl items-center mb-10"
-              >
-                {submitting ? (
-                  <ActivityIndicator color="black" />
-                ) : (
-                  <Text className="text-black font-bold text-lg">
-                    CONFIRM REGISTRATION
-                  </Text>
-                )}
-              </TouchableOpacity>
-            </ScrollView>
-          </View>
+                  )}
+                </TouchableOpacity>
+              </ScrollView>
+            </View>
+          </Wrapper>
         </View>
-      </KeyboardAvoidingView>
+      </TouchableWithoutFeedback>
     </Modal>
   );
 };
