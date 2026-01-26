@@ -36,7 +36,7 @@ export default function Home() {
   const [scrollY] = useState(new Animated.Value(0));
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // 1. New State for Match Stats
+  // New State for Match Stats
   const [matchStatsMap, setMatchStatsMap] = useState<{ [key: string]: any }>(
     {},
   );
@@ -96,7 +96,7 @@ export default function Home() {
 
               setLiveMatches(relevantMatches);
 
-              // 2. Fetch Stats for these matches
+              //Fetch Stats for these matches
               const stats: any = {};
               await Promise.all(
                 relevantMatches.slice(0, 10).map(async (m: any) => {
@@ -182,7 +182,7 @@ export default function Home() {
 
   const shortName = (name?: string) => {
     if (!name) return "Athlete";
-    return name.length > 14 ? name.slice(0, 11) + "..." : name;
+    return name.length > 8 ? name.slice(0, 8) + "..." : name;
   };
 
   const filteredEvents = events.filter((item: any) =>
@@ -216,13 +216,13 @@ export default function Home() {
         )}
         scrollEventThrottle={16}
       >
-        <View className="px-4 pt-4">
-          <View className="flex-row justify-between items-center py-6">
+        <View className="px-4 -mt-2 ">
+          <View className="flex-row justify-between items-center py-3">
             <View>
               <Text className="text-gray-400 text-md font-medium tracking-widest uppercase">
                 {greeting}
               </Text>
-              <Text className="text-4xl font-black text-white mt-2 tracking-tight">
+              <Text className="text-3xl font-black text-white mt-2 tracking-tight">
                 {shortName(user?.name)}
               </Text>
             </View>
@@ -248,15 +248,6 @@ export default function Home() {
                     </Text>
                   </View>
                 )}
-              </TouchableOpacity>
-
-              <TouchableOpacity onPress={() => router.push("/profile")}>
-                <View className="h-12 w-12 rounded-full bg-gray-800 border border-gray-700 overflow-hidden">
-                  <Image
-                    source={{ uri: user?.profilePicture }}
-                    className="h-full w-full"
-                  />
-                </View>
               </TouchableOpacity>
             </View>
           </View>

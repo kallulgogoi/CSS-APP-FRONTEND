@@ -103,6 +103,8 @@ export default function Leaderboard() {
       <FlatList
         data={data}
         keyExtractor={(item, index) => index.toString()}
+        showsHorizontalScrollIndicator={false}
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={loading}

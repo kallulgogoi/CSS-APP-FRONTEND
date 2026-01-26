@@ -83,7 +83,8 @@ export default function NotificationScreen() {
           <FlatList
             data={notifications}
             keyExtractor={(item: any) => item._id}
-            // 3. Add dynamic bottom padding here
+            showsHorizontalScrollIndicator={false}
+            showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
             refreshControl={
               <RefreshControl

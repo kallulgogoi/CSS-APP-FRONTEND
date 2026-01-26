@@ -16,7 +16,7 @@ export default function Developer() {
   const developers = [
     {
       id: 1,
-      name: "Kallol Gogoi",
+      name: "Kallul Gogoi",
       role: "Full Stack Developer",
       avatar:
         "https://res.cloudinary.com/dig1vxljf/image/upload/v1769251835/myself1_-_Kallul_Gogoi_ccrvj1.jpg",

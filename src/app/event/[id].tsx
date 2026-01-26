@@ -120,6 +120,8 @@ export default function EventDetails() {
         <FlatList
           data={matches}
           keyExtractor={(item: any) => item._id}
+          showsHorizontalScrollIndicator={false}
+          showsVerticalScrollIndicator={false}
           ListHeaderComponent={<EventHeader event={event} />}
           ListEmptyComponent={
             <Text className="text-tech-muted italic text-center mt-4">
