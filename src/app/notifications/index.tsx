@@ -65,12 +65,16 @@ export default function NotificationScreen() {
         {/* Header */}
         <View className="flex-row items-center justify-between py-4 mb-2">
           <View className="flex-row items-center">
-            <TouchableOpacity onPress={() => router.back()} className="mr-4">
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => router.back()}
+              className="mr-4"
+            >
               <Ionicons name="arrow-back" size={24} color="white" />
             </TouchableOpacity>
             <Text className="text-white font-bold text-xl">Notifications</Text>
           </View>
-          <TouchableOpacity onPress={markAllRead}>
+          <TouchableOpacity activeOpacity={0.8} onPress={markAllRead}>
             <Text className="text-cyan-400 text-sm font-bold">
               Mark all read
             </Text>

@@ -238,6 +238,7 @@ export default function AllMatchesScreen() {
         <View className="flex-row items-center py-4 mb-2">
           <TouchableOpacity
             onPress={() => router.back()}
+            activeOpacity={0.8}
             className="bg-neutral-900 p-2 rounded-full mr-4 border border-neutral-800"
           >
             <Ionicons name="arrow-back" size={24} color="white" />
@@ -266,6 +267,7 @@ export default function AllMatchesScreen() {
                 {availableSports.map((sport) => (
                   <TouchableOpacity
                     key={sport}
+                    activeOpacity={0.8}
                     onPress={() => setSelectedSport(sport)}
                     className={`mr-3 px-4 py-1.5 rounded-full border ${selectedSport === sport ? "bg-white border-white" : "bg-neutral-900 border-neutral-800"}`}
                   >
@@ -289,6 +291,7 @@ export default function AllMatchesScreen() {
                   availableRounds.map((round) => (
                     <TouchableOpacity
                       key={round}
+                      activeOpacity={0.8}
                       onPress={() => setSelectedRound(round)}
                       className={`mr-3 px-5 py-2 rounded-full border flex-row items-center ${selectedRound === round ? "bg-cyan-500/20 border-cyan-500" : "bg-neutral-900 border-neutral-800"}`}
                     >

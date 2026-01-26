@@ -40,8 +40,6 @@ export default function TeamDetails() {
       setTeam(data);
       setTeamName(data.name);
       setCaptainPhone(data.captainPhone || "");
-
-      // Convert member objects back to comma separated emails for editing
       if (data.members) {
         const emails = data.members
           .filter((m: any) => m.role !== "CAPTAIN")
@@ -107,7 +105,7 @@ export default function TeamDetails() {
     <ScreenWrapper>
       <View className="flex-row items-center mb-6">
         <TouchableOpacity
-          onPress={() => router.back()}
+          onPress={() => router.replace("/(tabs)/profile")}
           className="bg-tech-card p-2 rounded-full border border-tech-border mr-3"
         >
           <Ionicons name="arrow-back" size={24} color="white" />

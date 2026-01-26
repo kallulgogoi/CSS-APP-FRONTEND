@@ -221,6 +221,7 @@ export default function MatchBetting() {
             return (
               <TouchableOpacity
                 key={team._id}
+                activeOpacity={0.8}
                 disabled={!canBet}
                 onPress={() => setSelectedTeam(team._id)}
                 className={`flex-1 p-4 rounded-xl border-2 items-center justify-between min-h-[140px] ${

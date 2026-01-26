@@ -266,7 +266,7 @@ export default function Home() {
                   className="flex-1 ml-4 text-white font-medium text-lg h-full"
                 />
                 {searchQuery.length > 0 && (
-                  <TouchableOpacity onPress={() => setSearchQuery("")}>
+                  <TouchableOpacity activeOpacity={0.8} onPress={() => setSearchQuery("")}>
                     <Ionicons name="close-circle" size={22} color="#6b7280" />
                   </TouchableOpacity>
                 )}
