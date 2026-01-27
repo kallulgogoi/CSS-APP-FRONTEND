@@ -14,6 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useFocusEffect } from "expo-router";
 import { useAuth } from "../../hooks/useAuth";
 import moment from "moment";
+import Entypo from "@expo/vector-icons/Entypo";
 
 export default function SocialFeed() {
   const { user } = useAuth();
@@ -133,32 +134,25 @@ export default function SocialFeed() {
             </Text>
           </TouchableOpacity>
         </View>
-        <TouchableOpacity>
-          <Ionicons name="share-social-outline" size={22} color="#94a3b8" />
-        </TouchableOpacity>
       </View>
     </View>
   );
 
   return (
     <ScreenWrapper>
-      <View className="flex-1 bg-[#020617]">
-        <View className="flex-row justify-between items-center px-6 pt-6 pb-4">
+      <View className="flex-1 bg-[#020617] ">
+        <View className="flex-row justify-between items-center px-6 -pt-1 pb-4">
           <View>
-            <Text className="text-white text-3xl font-black italic tracking-tighter">
+            <Text className="text-white text-2xl font-black tracking-tighter">
               COMMUNITY
-            </Text>
-            <Text className="text-[#06b6d4] text-[10px] font-black tracking-[3px] uppercase">
-              Nexus Network
             </Text>
           </View>
           <TouchableOpacity
+            activeOpacity={0.8}
             onPress={() => router.push("/create-post")}
-            className="bg-[#06b6d4] h-14 w-14 items-center justify-center rounded-2xl rotate-45 shadow-lg shadow-cyan-500/50"
+            className=" h-14 w-14 flex-row items-center -mt-1 justify-center rounded-full shadow-lg "
           >
-            <View className="-rotate-45">
-              <Ionicons name="add" size={32} color="black" />
-            </View>
+            <Entypo name="circle-with-plus" size={48} color="cyan" />
           </TouchableOpacity>
         </View>
 

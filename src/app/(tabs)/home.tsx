@@ -4,7 +4,6 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  Image,
   RefreshControl,
   StatusBar,
   TextInput,
@@ -266,7 +265,10 @@ export default function Home() {
                   className="flex-1 ml-4 text-white font-medium text-lg h-full"
                 />
                 {searchQuery.length > 0 && (
-                  <TouchableOpacity activeOpacity={0.8} onPress={() => setSearchQuery("")}>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => setSearchQuery("")}
+                  >
                     <Ionicons name="close-circle" size={22} color="#6b7280" />
                   </TouchableOpacity>
                 )}
@@ -312,6 +314,7 @@ export default function Home() {
                 </View>
 
                 <TouchableOpacity
+                  activeOpacity={0.8}
                   onPress={() => router.push("/matches" as any)}
                 >
                   <Text className="text-cyan-400 font-bold text-sm">
@@ -340,7 +343,7 @@ export default function Home() {
               ) : (
                 <TouchableOpacity
                   onPress={() => router.push("/matches" as any)}
-                  activeOpacity={0.7}
+                  activeOpacity={0.8}
                   className="bg-neutral-900/50 p-6 rounded-2xl border border-neutral-800 border-dashed items-center justify-center mx-4"
                 >
                   <Ionicons name="calendar-outline" size={32} color="#525252" />

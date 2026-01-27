@@ -9,12 +9,15 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { api } from "../../constants";
 import { useRouter } from "expo-router";
 import { ScreenWrapper } from "../../components/ScreenWrapper";
 import { Ionicons } from "@expo/vector-icons";
+
+const MAX_CHARS = 200;
 
 export default function CreatePost() {
   const [content, setContent] = useState("");
@@ -58,7 +61,7 @@ export default function CreatePost() {
       await api.post("/posts", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      router.back();
+      router.replace("/(tabs)/feed");
     } catch (error: any) {
       Alert.alert(
         "Link Failed",
@@ -69,62 +72,104 @@ export default function CreatePost() {
     }
   };
 
+  const isValidLength = content.length <= MAX_CHARS;
+
   return (
     <ScreenWrapper>
-      <View className="flex-1 px-6">
-        <View className="flex-row justify-between items-center py-4 mb-4">
-          <TouchableOpacity
-            onPress={() => router.back()}
-            className="p-2 bg-neutral-900 rounded-full border border-neutral-800"
-          >
-            <Ionicons name="close" size={24} color="white" />
-          </TouchableOpacity>
-          <Text className="text-white font-black text-xl">NEW POST</Text>
-          <TouchableOpacity
-            onPress={handlePost}
-            disabled={uploading}
-            className={`px-6 py-2 rounded-full ${uploading ? "bg-gray-800" : "bg-tech-primary"}`}
-          >
-            {uploading ? (
-              <ActivityIndicator size="small" color="black" />
-            ) : (
-              <Text className="text-black font-black">POST</Text>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        className="flex-1"
+        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+      >
+        <ScrollView
+          contentContainerStyle={{ paddingBottom: 120 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View className="flex-1 px-6">
+            {/* Header */}
+            <View className="flex-row justify-between items-center py-4 mb-4">
+              <TouchableOpacity
+                onPress={() => router.replace("/(tabs)/feed")}
+                className="p-2 bg-neutral-900 rounded-full border border-neutral-800"
+              >
+                <Ionicons name="close" size={24} color="white" />
+              </TouchableOpacity>
+
+              <Text className="text-white font-black text-xl">NEW POST</Text>
+
+              <TouchableOpacity
+                onPress={handlePost}
+                activeOpacity={0.8}
+                disabled={uploading || !isValidLength}
+                className={`px-6 py-2 rounded-full ${
+                  uploading || !isValidLength
+                    ? "bg-gray-800"
+                    : "bg-tech-primary"
+                }`}
+              >
+                {uploading ? (
+                  <ActivityIndicator size="small" color="black" />
+                ) : (
+                  <Text className="text-black font-black">POST</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+
+            {/* Text Input */}
+            <View className="relative">
+              <TextInput
+                multiline
+                maxLength={MAX_CHARS}
+                placeholder="What's the status in the arena?"
+                placeholderTextColor="#64748b"
+                className="text-white text-lg min-h-[120px] bg-neutral-900/50 p-4 rounded-2xl border border-neutral-800"
+                value={content}
+                onChangeText={setContent}
+                textAlignVertical="top"
+              />
+
+              {/* Character Counter + Checkmark */}
+              <View className="absolute bottom-2 right-3 flex-row items-center gap-1">
+                <Text
+                  className={`text-xs font-bold ${
+                    isValidLength ? "text-emerald-400" : "text-red-400"
+                  }`}
+                >
+                  {content.length}/{MAX_CHARS}
+                </Text>
+                {isValidLength && content.length > 0 && (
+                  <Ionicons name="checkmark-circle" size={16} color="#34d399" />
+                )}
+              </View>
+            </View>
+
+            {/* Image Preview */}
+            {image && (
+              <View className="relative mt-6 rounded-2xl overflow-hidden border border-tech-border">
+                <Image source={{ uri: image.uri }} className="w-full h-80" />
+                <TouchableOpacity
+                  onPress={() => setImage(null)}
+                  className="absolute top-3 right-3 bg-black/70 p-2 rounded-full"
+                >
+                  <Ionicons name="trash" size={20} color="#f87171" />
+                </TouchableOpacity>
+              </View>
             )}
-          </TouchableOpacity>
-        </View>
 
-        <TextInput
-          multiline
-          placeholder="What's the status in the arena?"
-          placeholderTextColor="#64748b"
-          className="text-white text-lg min-h-[120px] bg-neutral-900/50 p-4 rounded-2xl border border-neutral-800"
-          value={content}
-          onChangeText={setContent}
-          textAlignVertical="top"
-        />
-
-        {image && (
-          <View className="relative mt-6 rounded-2xl overflow-hidden border border-tech-border">
-            <Image source={{ uri: image.uri }} className="w-full h-80" />
+            {/* Pick Image Button */}
             <TouchableOpacity
-              onPress={() => setImage(null)}
-              className="absolute top-3 right-3 bg-black/70 p-2 rounded-full"
+              onPress={pickImage}
+              className="flex-row items-center mt-8 self-start bg-neutral-900 px-6 py-4 rounded-2xl border border-neutral-800"
             >
-              <Ionicons name="trash" size={20} color="#f87171" />
+              <Ionicons name="image" size={28} color="#06b6d4" />
+              <Text className="text-tech-primary ml-3 font-black tracking-widest uppercase text-xs">
+                Attach Media
+              </Text>
             </TouchableOpacity>
           </View>
-        )}
-
-        <TouchableOpacity
-          onPress={pickImage}
-          className="flex-row items-center mt-8 self-start bg-neutral-900 px-6 py-4 rounded-2xl border border-neutral-800"
-        >
-          <Ionicons name="image" size={28} color="#06b6d4" />
-          <Text className="text-tech-primary ml-3 font-black tracking-widest uppercase text-xs">
-            Attach Media
-          </Text>
-        </TouchableOpacity>
-      </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </ScreenWrapper>
   );
 }

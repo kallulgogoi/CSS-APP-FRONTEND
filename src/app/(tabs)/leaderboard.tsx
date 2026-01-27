@@ -69,6 +69,7 @@ export default function Leaderboard() {
       {/* Toggle Switch */}
       <View className="flex-row bg-tech-card border border-tech-border rounded-xl p-1 mb-6">
         <TouchableOpacity
+          activeOpacity={0.8}
           onPress={() => setActiveTab("USERS")}
           className={`flex-1 py-3 rounded-lg items-center ${
             activeTab === "USERS" ? "bg-tech-primary" : "bg-transparent"
@@ -84,6 +85,7 @@ export default function Leaderboard() {
         </TouchableOpacity>
 
         <TouchableOpacity
+          activeOpacity={0.8}
           onPress={() => setActiveTab("TEAMS")}
           className={`flex-1 py-3 rounded-lg items-center ${
             activeTab === "TEAMS" ? "bg-tech-primary" : "bg-transparent"
