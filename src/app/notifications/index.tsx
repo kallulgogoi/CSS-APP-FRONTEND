@@ -11,11 +11,11 @@ import { useRouter } from "expo-router";
 import { ScreenWrapper } from "../../components/ScreenWrapper";
 import { api } from "../../constants";
 import { Ionicons } from "@expo/vector-icons";
-import { useSafeAreaInsets } from "react-native-safe-area-context"; // 1. Import this
+import { useSafeAreaInsets } from "react-native-safe-area-context"; 
 
 export default function NotificationScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets(); // 2. Get safe area insets
+  const insets = useSafeAreaInsets(); 
 
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
